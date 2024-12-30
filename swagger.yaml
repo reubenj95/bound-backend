@@ -1,0 +1,344 @@
+openapi: 3.0.0
+info:
+  title: Energy Management System API
+  version: 1.0.0
+  description: API documentation for the Energy Management System
+
+servers:
+  - url: /api
+    description: API base URL
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CheckIn:
+      type: object
+      required:
+        - user_id
+        - energy_level
+        - mood
+        - activity_type
+      properties:
+        user_id:
+          type: string
+        energy_level:
+          type: number
+          minimum: 1
+          maximum: 10
+        mood:
+          type: string
+        notes:
+          type: string
+        activity_type:
+          type: string
+        social_interaction_level:
+          type: number
+          minimum: 1
+          maximum: 10
+        created_at:
+          type: string
+          format: date-time
+
+    Notification:
+      type: object
+      required:
+        - user_id
+        - type
+        - title
+        - message
+        - priority
+      properties:
+        user_id:
+          type: string
+        type:
+          type: string
+        title:
+          type: string
+        message:
+          type: string
+        priority:
+          type: string
+          enum: [low, medium, high]
+        data:
+          type: object
+        delivery_time:
+          type: string
+          format: date-time
+
+    Analysis:
+      type: object
+      required:
+        - user_id
+      properties:
+        user_id:
+          type: string
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        metrics:
+          type: array
+          items:
+            type: string
+        categories:
+          type: array
+          items:
+            type: string
+
+security:
+  - bearerAuth: []
+
+paths:
+  /check-ins:
+    post:
+      summary: Create a new check-in
+      tags: [Check-ins]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckIn'
+      responses:
+        201:
+          description: Check-in created successfully
+        400:
+          description: Invalid request
+        401:
+          description: Unauthorized
+
+    get:
+      summary: List check-ins
+      tags: [Check-ins]
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: Items per page
+      responses:
+        200:
+          description: List of check-ins
+        401:
+          description: Unauthorized
+
+  /check-ins/{id}:
+    get:
+      summary: Get a specific check-in
+      tags: [Check-ins]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Check-in details
+        404:
+          description: Check-in not found
+
+    put:
+      summary: Update a check-in
+      tags: [Check-ins]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckIn'
+      responses:
+        200:
+          description: Check-in updated successfully
+        404:
+          description: Check-in not found
+
+    delete:
+      summary: Delete a check-in
+      tags: [Check-ins]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Check-in deleted successfully
+        404:
+          description: Check-in not found
+
+  /notifications:
+    post:
+      summary: Create a new notification
+      tags: [Notifications]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Notification'
+      responses:
+        201:
+          description: Notification created successfully
+        400:
+          description: Invalid request
+
+  /notifications/pending/{userId}:
+    get:
+      summary: Get pending notifications for a user
+      tags: [Notifications]
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: List of pending notifications
+
+  /notifications/preferences/{userId}:
+    put:
+      summary: Update notification preferences
+      tags: [Notifications]
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email_enabled:
+                  type: boolean
+                push_enabled:
+                  type: boolean
+      responses:
+        200:
+          description: Preferences updated successfully
+
+  /analysis/patterns:
+    get:
+      summary: Analyze patterns
+      tags: [Analysis]
+      parameters:
+        - in: query
+          name: userId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: timeframe
+          schema:
+            type: string
+      responses:
+        200:
+          description: Pattern analysis results
+
+  /analysis/predict-impact:
+    post:
+      summary: Predict impact of an event
+      tags: [Analysis]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - eventType
+                - userId
+              properties:
+                eventType:
+                  type: string
+                userId:
+                  type: string
+                timing:
+                  type: string
+                  format: date-time
+      responses:
+        200:
+          description: Impact prediction results
+
+  /analysis/insights:
+    get:
+      summary: Get insights
+      tags: [Analysis]
+      parameters:
+        - in: query
+          name: userId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: timeframe
+          schema:
+            type: string
+        - in: query
+          name: categories
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        200:
+          description: Generated insights
+
+  /analysis/report:
+    post:
+      summary: Generate analysis report
+      tags: [Analysis]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+                - startDate
+                - endDate
+              properties:
+                userId:
+                  type: string
+                startDate:
+                  type: string
+                  format: date-time
+                endDate:
+                  type: string
+                  format: date-time
+                format:
+                  type: string
+                  enum: [json, csv, pdf]
+                sections:
+                  type: array
+                  items:
+                    type: string
+                    enum: [patterns, insights, recommendations]
+      responses:
+        200:
+          description: Generated report
